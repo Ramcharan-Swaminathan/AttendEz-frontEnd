@@ -244,3 +244,7 @@ export const deleteLecture = (classCode, lectureNo) =>
     classcode: classCode,
     lectureno: lectureNo
   });
+
+// POST /api2/predict_attendance
+export const predictAttendance = (classCode) =>
+  axios.post(`${backendUrl}/api2/predict_attendance`, { class_code: classCode });

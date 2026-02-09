@@ -20,6 +20,7 @@ import {
   pollAttendanceWithVersion,
   getAllStudentDetails,
   saveManualAttendance,
+  predictAttendance,
 } from "../../TeacherApi";
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
@@ -30,7 +31,7 @@ function FacultyHomepageComponent({ c }) {
   const endTime = new Date(`2000-01-01 ${classdetails.start}`);
   endTime.setMinutes(endTime.getMinutes() + classdetails.duration);
   const formattedEndTime = endTime.toTimeString().slice(0, 5);
-  
+
 
   // State for modals and popups
   const [showManualModal, setShowManualModal] = useState(false);
@@ -41,6 +42,34 @@ function FacultyHomepageComponent({ c }) {
   const [generatedCode, setGeneratedCode] = useState("");
   const [liveAttendance, setLiveAttendance] = useState([]);
   const [pollingActive, setPollingActive] = useState(false);
+
+  // State for Prediction
+  const [prediction, setPrediction] = useState(null);
+
+  useEffect(() => {
+    const fetchPrediction = async () => {
+      try {
+        const res = await predictAttendance(classdetails.classCode);
+        if (res.data && res.data.forecast) {
+          // Find the forecast matching this class start time
+          // classdetails.start is expected to be "HH:MM"
+          // forecast.class_date is "YYYY-MM-DD HH:MM:SS"
+          const match = res.data.forecast.find((f) =>
+            f.class_date.includes(classdetails.start)
+          );
+          if (match) {
+            setPrediction(match);
+          }
+        }
+      } catch (err) {
+        console.error("Error fetching attendance prediction:", err);
+      }
+    };
+    if (classdetails.classCode) {
+      fetchPrediction();
+    }
+  }, [classdetails.classCode, classdetails.start]);
+
 
   const [countdown, setCountdown] = useState(45);
 
@@ -301,6 +330,19 @@ function FacultyHomepageComponent({ c }) {
               <p className="text-base font-semibold text-gray-800">
                 {classdetails.duration} mins
               </p>
+              {prediction && (
+                <div className="mt-2 bg-blue-50 p-2 rounded-lg border border-blue-100 text-center">
+                  <p className="text-[10px] text-blue-600 font-bold uppercase tracking-wider">
+                    Predicted
+                  </p>
+                  <p className="text-lg font-bold text-blue-700 leading-none">
+                    {Math.abs(prediction.predicted_attendance)}
+                  </p>
+                  <p className="text-[10px] text-gray-500 mt-1">
+                    Safe Margin: {prediction.safety_margin_min}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
@@ -554,25 +596,22 @@ function ActionButton({
   return (
     <button
       onClick={onClick}
-      className={`cursor-pointer flex flex-col items-center justify-center gap-2 rounded-xl border transition duration-200 ease-in-out py-3 px-3 h-auto min-h-[80px] w-full hover:scale-[1.02] hover:-translate-y-0.5 ${
-        isHighlighted
-          ? "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100"
-          : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100"
-      }`}
+      className={`cursor-pointer flex flex-col items-center justify-center gap-2 rounded-xl border transition duration-200 ease-in-out py-3 px-3 h-auto min-h-[80px] w-full hover:scale-[1.02] hover:-translate-y-0.5 ${isHighlighted
+        ? "bg-blue-100 text-blue-700 border-blue-200 hover:bg-blue-100"
+        : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100"
+        }`}
     >
       <div
-        className={`p-2 rounded-md ${
-          isHighlighted ? "bg-blue-200" : "bg-gray-100"
-        }`}
+        className={`p-2 rounded-md ${isHighlighted ? "bg-blue-200" : "bg-gray-100"
+          }`}
       >
         {icon}
       </div>
       <div className="text-center">
         <p className="font-medium text-sm">{label}</p>
         <p
-          className={`text-xs mt-0.5 ${
-            isHighlighted ? "text-blue-600" : "text-gray-500"
-          }`}
+          className={`text-xs mt-0.5 ${isHighlighted ? "text-blue-600" : "text-gray-500"
+            }`}
         >
           {description}
         </p>
@@ -691,22 +730,20 @@ function ManualAttendanceModal({ classCode, onClose }) {
                 <div className="flex gap-2 sm:gap-3 w-full sm:w-auto justify-between">
                   <button
                     onClick={() => markAttendance(id, "present")}
-                    className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
-                      attendance[id] === "present"
-                        ? "bg-green-500 text-white shadow-md transform scale-105"
-                        : "bg-green-100 text-green-700 hover:bg-green-200 border border-green-300"
-                    }`}
+                    className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${attendance[id] === "present"
+                      ? "bg-green-500 text-white shadow-md transform scale-105"
+                      : "bg-green-100 text-green-700 hover:bg-green-200 border border-green-300"
+                      }`}
                   >
                     <UserCheck className="w-4 h-4" />
                     Present
                   </button>
                   <button
                     onClick={() => markAttendance(id, "absent")}
-                    className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${
-                      attendance[id] === "absent"
-                        ? "bg-red-500 text-white shadow-md transform scale-105"
-                        : "bg-red-100 text-red-700 hover:bg-red-200 border border-red-300"
-                    }`}
+                    className={`flex-1 flex items-center justify-center gap-1 sm:gap-2 px-3 py-2 rounded-lg font-medium text-sm transition-all duration-200 ${attendance[id] === "absent"
+                      ? "bg-red-500 text-white shadow-md transform scale-105"
+                      : "bg-red-100 text-red-700 hover:bg-red-200 border border-red-300"
+                      }`}
                   >
                     <UserX className="w-4 h-4" />
                     Absent
