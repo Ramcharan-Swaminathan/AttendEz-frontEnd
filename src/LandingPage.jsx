@@ -21,7 +21,7 @@ export default function LandingPage() {
   useEffect(() => {
     const checkStatus = async () => {
       try {
-        const res = await fetch("/ping");
+        const res = await fetch("https://api.buildapp.in/ping");
         const text = await res.text();
         if (text === "pong") setStatus("online");
         else setStatus("offline");
