@@ -87,7 +87,7 @@ export async function sendPasscode(passcode) {
   return res.data;
 }
 
-export async function sendQR(qr) {
+export async function sendQR(qr, latitude, longitude) {
   const keyString = localStorage.getItem("hmacpasscode");
   if (!keyString) throw new Error("Missing HMAC key");
 
@@ -113,6 +113,8 @@ export async function sendQR(qr) {
       params: {
         digest,
         qrCode: qr,
+        latitude,
+        longitude,
       },
     }
   );

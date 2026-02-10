@@ -37,13 +37,13 @@ function BigPopup({
   message = "",
   type = "success",
   duration = 3500,
-  onClose = () => {},
+  onClose = () => { },
 }) {
   useEffect(() => {
     if (!open) return;
     const t = setTimeout(() => {
       onClose();
-    }, duration); 
+    }, duration);
 
     return () => clearTimeout(t);
   }, [open, duration, onClose]);
@@ -88,11 +88,10 @@ function BigPopup({
           {/* content */}
           <div className="flex flex-col items-center gap-4 text-center">
             <div
-              className={`p-5 rounded-full border-2 flex items-center justify-center ${
-                type === "success"
+              className={`p-5 rounded-full border-2 flex items-center justify-center ${type === "success"
                   ? "border-green-200 bg-green-50"
                   : "border-red-200 bg-red-50"
-              }`}
+                }`}
             >
               <Icon className="w-14 h-14" />
             </div>
@@ -335,7 +334,19 @@ function HomepageStudent() {
           scannerRef.current = null;
 
           try {
-            const res = await sendQR(decodedText);
+            let lat = null;
+            let lon = null;
+            try {
+              const position = await new Promise((resolve, reject) => {
+                navigator.geolocation.getCurrentPosition(resolve, reject);
+              });
+              lat = position.coords.latitude;
+              lon = position.coords.longitude;
+            } catch (geoError) {
+              console.warn("Geolocation access denied or failed:", geoError);
+            }
+
+            const res = await sendQR(decodedText, lat, lon);
 
             // Open big popup instead of small toast
             setBigPopupData({
@@ -523,11 +534,10 @@ function HomepageStudent() {
             <button
               onClick={startScanner}
               disabled={showScanner}
-              className={`group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-lg w-full md:w-auto max-w-sm ${
-                showScanner
+              className={`group relative inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-semibold text-base transition-all duration-300 transform hover:scale-105 shadow-lg w-full md:w-auto max-w-sm ${showScanner
                   ? "bg-gray-300 text-gray-500 cursor-not-allowed shadow-sm scale-100"
                   : "bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-blue-200 hover:shadow-xl"
-              }`}
+                }`}
             >
               <div className="relative">
                 {showScanner ? (

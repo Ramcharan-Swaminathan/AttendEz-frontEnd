@@ -153,8 +153,10 @@ export const flipAttendance = (data) => api.post("/flipAttendance", data);
 
 
 // POST /qr/generateQRCode?classCode=...
-export const generateQRCode = (classCode) =>
-  api.post(`/qr/generateQRCode`, null, { params: { classCode } });
+export const generateQRCode = (classCode, latitude, longitude) =>
+  api.post(`/qr/generateQRCode`, null, {
+    params: { classCode, latitude, longitude },
+  });
 
 // POST /passcode/generateCode?classCode=...
 export const generatePasscode = (classCode) =>
@@ -192,9 +194,14 @@ export const fetchClassCodeFromSubstitutionCode = (subCode) =>
     params: { substitutionCode: subCode },
   });
 // NEW versions with subCode param
-export const generateQRCodeWithSubcode = (classCode, subCode) =>
+export const generateQRCodeWithSubcode = (
+  classCode,
+  subCode,
+  latitude,
+  longitude
+) =>
   api.post(`/qr/generateQRCode`, null, {
-    params: { classCode, subCode },
+    params: { classCode, subCode, latitude, longitude },
   });
 
 export const saveManualAttendanceWithSubcode = (

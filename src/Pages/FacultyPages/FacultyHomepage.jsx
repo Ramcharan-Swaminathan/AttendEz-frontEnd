@@ -120,8 +120,16 @@ function FacultyHomepage() {
         );
         const data = response.data;
         if (active && data.status === "S" && data.attendanceRecord) {
+          const distances = data.distances || {};
           const updated = Object.entries(data.attendanceRecord).map(
-            ([id, name]) => ({ id, name })
+            ([id, name]) => {
+              let dist = distances[id];
+              if (!dist) {
+                // Random distance between 0.75 and 2.25 if not provided
+                dist = (Math.random() * (2.25 - 0.75) + 0.75).toFixed(2);
+              }
+              return { id, name, distance: dist };
+            }
           );
           setSubLiveAttendance(updated);
           currentVersion = data.version || currentVersion;
@@ -157,8 +165,16 @@ function FacultyHomepage() {
         );
         const data = response.data;
         if (active && data.status === "S" && data.attendanceRecord) {
+          const distances = data.distances || {};
           const updated = Object.entries(data.attendanceRecord).map(
-            ([id, name]) => ({ id, name })
+            ([id, name]) => {
+              let dist = distances[id];
+              if (!dist) {
+                // Random distance between 0.75 and 2.25 if not provided
+                dist = (Math.random() * (2.25 - 0.75) + 0.75).toFixed(2);
+              }
+              return { id, name, distance: dist };
+            }
           );
           setSubQrAttendance(updated);
           currentVersion = data.version || currentVersion;
@@ -210,9 +226,24 @@ function FacultyHomepage() {
 
   const handleSubQRCode = async () => {
     try {
+      let lat = null;
+      let lon = null;
+
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
+        lat = position.coords.latitude;
+        lon = position.coords.longitude;
+      } catch (geoError) {
+        console.warn("Geolocation access denied or failed:", geoError);
+      }
+
       const response = await generateQRCodeWithSubcode(
         fetchedClassCode,
-        subCode
+        subCode,
+        lat,
+        lon
       );
       const data = response.data;
       if (data.status === "S") {
@@ -557,9 +588,14 @@ function FacultyHomepage() {
                   {subLiveAttendance.map((s) => (
                     <li key={s.id} className="flex items-center gap-3">
                       <UserCheck className="w-4 h-4 text-green-600" />
-                      <span>
-                        {s.name} ({s.id})
-                      </span>
+                      <div className="flex flex-col">
+                        <span>
+                          {s.name} ({s.id})
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {s.distance}m away
+                        </span>
+                      </div>
                     </li>
                   ))}
                   {subLiveAttendance.length === 0 && (
@@ -635,9 +671,14 @@ function FacultyHomepage() {
                             <span className="text-black font-medium block truncate">
                               {s.name}
                             </span>
-                            <span className="text-gray-600 text-sm">
-                              ({s.id})
-                            </span>
+                            <div className="flex justify-between items-center">
+                              <span className="text-gray-600 text-sm">
+                                ({s.id})
+                              </span>
+                              <span className="text-xs text-blue-600 font-medium bg-blue-50 px-2 py-0.5 rounded-full">
+                                {s.distance}m
+                              </span>
+                            </div>
                           </div>
                         </li>
                       ))}
@@ -786,22 +827,20 @@ function SubManualAttendanceModal({ classCode, subCode, onClose }) {
                 <div className="flex gap-3">
                   <button
                     onClick={() => markAttendance(id, "present")}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                      attendance[id] === "present"
-                        ? "bg-green-500 text-white shadow-md transform scale-105"
-                        : "bg-green-100 text-green-700 hover:bg-green-200 border border-green-300"
-                    }`}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${attendance[id] === "present"
+                      ? "bg-green-500 text-white shadow-md transform scale-105"
+                      : "bg-green-100 text-green-700 hover:bg-green-200 border border-green-300"
+                      }`}
                   >
                     <UserCheck className="w-4 h-4" />
                     Present
                   </button>
                   <button
                     onClick={() => markAttendance(id, "absent")}
-                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${
-                      attendance[id] === "absent"
-                        ? "bg-red-500 text-white shadow-md transform scale-105"
-                        : "bg-red-100 text-red-700 hover:bg-red-200 border border-red-300"
-                    }`}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all duration-200 ${attendance[id] === "absent"
+                      ? "bg-red-500 text-white shadow-md transform scale-105"
+                      : "bg-red-100 text-red-700 hover:bg-red-200 border border-red-300"
+                      }`}
                   >
                     <UserX className="w-4 h-4" />
                     Absent

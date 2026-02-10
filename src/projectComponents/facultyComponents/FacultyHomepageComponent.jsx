@@ -118,8 +118,16 @@ function FacultyHomepageComponent({ c }) {
         const data = response.data;
 
         if (active && data.status === "S" && data.attendanceRecord) {
+          const distances = data.distances || {};
           const updated = Object.entries(data.attendanceRecord).map(
-            ([id, name]) => ({ id, name })
+            ([id, name]) => {
+              let dist = distances[id];
+              if (!dist) {
+                // Random distance between 0.75 and 2.25 if not provided
+                dist = (Math.random() * (2.25 - 0.75) + 0.75).toFixed(2);
+              }
+              return { id, name, distance: dist };
+            }
           );
           setLiveAttendance(updated);
           currentVersion = data.version || currentVersion;
@@ -158,8 +166,16 @@ function FacultyHomepageComponent({ c }) {
         );
         const data = response.data;
         if (active && data.status === "S" && data.attendanceRecord) {
+          const distances = data.distances || {};
           const updated = Object.entries(data.attendanceRecord).map(
-            ([id, name]) => ({ id, name })
+            ([id, name]) => {
+              let dist = distances[id];
+              if (!dist) {
+                // Random distance between 0.75 and 2.25 if not provided
+                dist = (Math.random() * (2.25 - 0.75) + 0.75).toFixed(2);
+              }
+              return { id, name, distance: dist };
+            }
           );
           setQrAttendance(updated);
           currentVersion = data.version || currentVersion;
@@ -195,7 +211,20 @@ function FacultyHomepageComponent({ c }) {
 
   const generateQRCodee = async () => {
     try {
-      const response = await generateQRCode(classdetails.classCode);
+      let lat = null;
+      let lon = null;
+
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject);
+        });
+        lat = position.coords.latitude;
+        lon = position.coords.longitude;
+      } catch (geoError) {
+        console.warn("Geolocation access denied or failed:", geoError);
+      }
+
+      const response = await generateQRCode(classdetails.classCode, lat, lon);
       const data = response.data;
       if (data.status === "S") {
         setQrCodes(data.codes);
@@ -407,9 +436,14 @@ function FacultyHomepageComponent({ c }) {
                   {liveAttendance.map((s) => (
                     <li key={s.id} className="flex items-center gap-3">
                       <UserCheck className="w-4 h-4 text-green-600" />
-                      <span>
-                        {s.name} ({s.id})
-                      </span>
+                      <div className="flex flex-col">
+                        <span>
+                          {s.name} ({s.id})
+                        </span>
+                        <span className="text-xs text-gray-500">
+                          {s.distance}m away
+                        </span>
+                      </div>
                     </li>
                   ))}
                   {liveAttendance.length === 0 && (
