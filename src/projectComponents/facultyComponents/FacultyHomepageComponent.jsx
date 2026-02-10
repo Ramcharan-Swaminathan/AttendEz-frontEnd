@@ -118,7 +118,9 @@ function FacultyHomepageComponent({ c }) {
         const data = response.data;
 
         if (active && data.status === "S" && data.attendanceRecord) {
+          console.log("Polling Data:", data);
           const distances = data.distances || {};
+          console.log("Distances:", distances);
           const updated = Object.entries(data.attendanceRecord).map(
             ([id, name]) => {
               let dist = distances[id];
@@ -129,6 +131,7 @@ function FacultyHomepageComponent({ c }) {
               return { id, name, distance: dist };
             }
           );
+          console.log("Updated Attendance:", updated);
           setLiveAttendance(updated);
           currentVersion = data.version || currentVersion;
         }
